@@ -1,55 +1,100 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-int main(int argc, char* argv[]){
-    int i = 0;
-    while (i < argc){
-        if (argc == 1) {
-            printf("laba 1\n");
-            printf("If you want see all commands, enter -h or --help\n");
-            return 0;
-        } 
-        if (strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "--help") == 0){
-            printf("All commands:\n");
-            printf("1. When entering '-h' or '--help', the program will give a detailed help with the functionality of the program, if any problems suddenly arise.\n");
-            printf("2. When entering '-t' or '--table', the program will output in tabular form the sizes of all simple types of the C/C++ language.\n");
-            printf("3. When you enter '-c' or '--calc', the program will output 3 lines where you need to enter the first number-the arithmetic action-the second number.\n");
-        }
-        else if (strcmp(argv[i], "--table") == 0 || strcmp(argv[i], "-t") == 0) {
-            printf("Table:\n");
-            printf("char:\t\t%lu bytes\n", sizeof(char));
-            printf("wchar_t:\t%lu bytes\n", sizeof(wchar_t));
-            printf("short:\t\t%lu bytes\n", sizeof(short));
-            printf("int:\t\t%lu bytes\n", sizeof(int));
-            printf("long:\t\t%lu bytes\n", sizeof(long));
-            printf("float:\t\t%lu bytes\n", sizeof(float));
-            printf("long long:\t%lu bytes\n", sizeof(long long));
-            printf("double:\t\t%lu bytes\n", sizeof(double));
-            printf("long double:\t%lu bytes\n", sizeof(long double));
-        }
-        else if (strcmp(argv[i], "--calc") == 0 || strcmp(argv[i], "-c") == 0) {
-            if (argc - i >= 4) {
-                printf("Calcuation:\n");
-                int a = atof(argv[2]);
-                int b = atof(argv[4]);
-                char oper = argv[3][0];
-                if (oper == '+')
-                    printf("Result of +: %d\n", a + b);
-                else if (oper == '-')
-                    printf("Result of -: %d\n", a - b);
-                else if (oper == '*')
-                    printf("Result of *: %d\n", a * b);
-                else if (oper == '/')
-                    printf("Result of /: %d\n", a / b);
-                else {
-                    printf("Something went wrong... Try again.\n");
-                }
-            }
-            else {
-                printf("ERROR! Use the help, to do this, enter -h.\n");
-            }
-        }
-        i++;
-    }
-    return 0;
-}
+import numpy as np
+from scipy.linalg import solve
+from copy import deepcopy
+
+
+f = open("test.txt")
+length = int(f.readline())
+A = []
+B = []
+print(length)
+for _ in range(length):
+    row = f.readline().split()
+    A1 = []
+    for j in range(len(row) - 1):
+        A1.append(int(row[j]))
+
+    B.append(int(row[-1]))
+    A.append(A1)
+
+A_test = np.array(A[:][:])
+B_test = np.array(B[:])
+
+
+def determinant(matrix: list[list[int]]) -> int:
+    det = 0
+    match len(matrix):
+        case 1:
+            return matrix[0][0]
+        case 2:
+            return matrix[0][0] * matrix[1][1] - matrix[0][1] * matrix[1][0]
+        case _:
+            for k in range(len(matrix)):
+                det += matrix[0][k] * (-1) ** k * determinant(
+                    [matrix[i][:k] + matrix[i][k + 1:] for i in range(1, len(matrix))])
+    return det
+
+
+def kramer(a, b):
+    det = determinant(a)
+    if det == 0:
+        print("определитель равен 0")
+        return
+    print("Метод Крамера:")
+    for i in range(len(a)):
+        new_a = deepcopy(a)
+        for j in range(len(a)):
+            new_a[j][i] = b[j]
+        print(f"x{i} = {determinant(new_a) / det}")
+
+
+def second_helper(a, b):
+    x0 = [0 for _ in range(len(a))]  # Значения переменных предыдущей итерации
+    x = [1 for _ in range(len(a))]  # Значения переменных текущей итерации
+    de = [1 for _ in range(len(a))]  # Погрешность
+    e = 10 ** -15  # Заданная точность
+    n = len(a)
+
+    while max(de) > e:
+        for i in range(n):
+            s = b[i]
+            for j in range(n):
+                if j != i:
+                    s -= a[i][j] * x0[j]
+            s /= a[i][i]
+
+            s = float('{:.15f}'.format(s))
+            de[i] = float('{:.15f}'.format(abs(s - x0[i])))
+            x[i] = s
+
+        for i in range(n):
+            x0[i] = x[i]
+
+    print("\nМетод простых итераций")
+    for i in range(n):
+        print(f"x{i} = {x[i]}")
+
+
+def second(a, b):
+    a0 = deepcopy(a)
+    flag = True
+    for i in range(len(a)):
+        for j in range(len(a)):
+            a[i][j] = abs(a[i][j])
+
+    for i in range(len(a)):
+        if sum(a[i]) - 2 * a[i][i] >= 0:
+            flag = False
+            print("Диагональное преобладание не соблюдается")
+            break
+    if flag:
+        second_helper(a0, b)
+
+
+kramer(A, B)
+second(A, B)
+
+
+ans = solve(A_test, B_test)
+
+print("\nРешение системы уравнений из библиотеки:", *ans, sep="\n")
